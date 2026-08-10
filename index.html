@@ -5,10 +5,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hệ thống Ôn thi Tin học 2025 - Chống gian lận</title>
     
-    <!-- 1. Tích hợp Tailwind CSS để làm đẹp giao diện tự động -->
+    <!-- 1. Tích hợp Tailwind CSS để làm đẹp giao diện -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- 2. Tích hợp thư viện React & ReactDOM (Phiên bản mới nhất) -->
+    <!-- 2. Tích hợp thư viện React & ReactDOM -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- 3. Liên kết tệp CSS bên ngoài -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-gray-100 min-h-screen">
+    
+    <!-- Nơi ứng dụng React sẽ hiển thị -->
+    <div id="root"></div>
+
+    <!-- 4. Liên kết tệp JavaScript chứa Logic (Lưu ý: type="text/babel") -->
+    <script type="text/babel" src="app.js"></script>
+</body>
+</html>
