@@ -1,0 +1,29 @@
+<!-- 3. CSS Tùy chỉnh (Chống sao chép, bôi đen) -->
+    <style>
+        /* Chống bôi đen, chọn văn bản */
+        .no-select {
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+        }
+        /* Chặn chuột trái/phải click vào đề thi (Canvas) */
+        canvas {
+            pointer-events: none;
+        }
+        /* Thiết kế màn hình cảnh báo gian lận chiếm toàn màn hình */
+        .alert-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(220, 38, 38, 0.95); /* Màu đỏ cảnh báo */
+            color: white;
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <!-- Nơi ứng dụng React sẽ hiển thị -->
+    <div id="root"></div>
