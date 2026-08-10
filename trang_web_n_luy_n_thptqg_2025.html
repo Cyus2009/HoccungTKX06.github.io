@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hệ Thống Ôn Luyện THPTQG Môn Tin Học 2025</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <!-- Babel for JSX compilation in browser -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        /* Ngăn chặn bôi đen và tương tác mặc định cho vùng bảo mật */
+        .secure-view {
+            user-select: none;
+            -webkit-user-select: none;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-900 font-sans">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef, useCallback } = React;
+
+        // =====================================================================
+        // MOCK DATA & UTILS
+        // =====================================================================
+        const mockQuestions = [
+            { id: 1, type: "single", content: "Câu 1: Kiến trúc Zero Trust trong an ninh mạng có nghĩa là gì?", options: ["A. Không tin tưởng bất kỳ ai, luôn xác minh", "B. Tin tưởng mạng nội bộ, chặn mạng bên ngoài", "C. Không sử dụng mật khẩu", "D. Chỉ cấp quyền cho quản trị viên"] },
+            { id: 2, type: "single", content: "Câu 2: HTML5 Canvas API chủ yếu được sử dụng để làm gì?", options: ["A. Xây dựng cơ sở dữ liệu", "B. Vẽ đồ họa và kết xuất điểm ảnh trên trang web", "C. Tạo API cho Backend", "D. Viết các truy vấn SQL"] },
+            { id: 23, type: "true_false", content: "Câu 23: Cho thuật toán sắp xếp nổi bọt (Bubble Sort):", subClauses: ["a) Độ phức tạp thuật toán trong trường hợp xấu nhất là O(N²).", "b) Thuật toán không có tính ổn định (stable).", "c) Cần bộ nhớ phụ trợ (Space Complexity) lớn.", "d) Là thuật toán sắp xếp bằng cách đổi chỗ trực tiếp."] },
+            { id: 28, type: "text", content: "Câu 28: Nếu một vòng lặp FOR chạy từ 1 đến N với độ trễ mỗi bước là 1ms. Khi N=1000, thời gian thực thi tối thiểu là bao nhiêu (tính bằng ms)?" }
+        ];
+        
+        // Mở rộng đủ 28 câu cho UI
+        const generateFullExam = () => {
+            const exam = [...mockQuestions];
+            for(let i=3; i<=22; i++) {
+                if(i !== 23 && i !== 28) exam.push({ id: i, type: "single", content: `Câu ${i}: Nội dung câu hỏi trắc nghiệm số ${i}...`, options: ["A. Lựa chọn 1", "B. Lựa chọn 2", "C. Lựa chọn 3", "D. Lựa chọn 4"] });
+            }
+            exam.push({ id: 24, type: "true_false", content: "Câu 24: Về Mạng máy tính (Computer Network):", subClauses: ["a) Địa chỉ IP v4 có độ dài 32 bit.", "b) Giao thức HTTP chạy trên cổng 443.", "c) Tên miền giúp người dùng không phải nhớ địa chỉ IP.", "d) Router là thiết bị hoạt động ở Tầng 2 (Data Link)."] });
+            for(let i=25; i<=27; i++) {
+                exam.push({ id: i, type: "text", content: `Câu ${i}: Nhập kết quả cho bài toán phân tích dữ liệu số ${i}...` });
+            }
+            return exam.sort((a,b) => a.id - b.id);
+        };
+
+        // =====================================================================
+        // COMPONENT: LOGIN
+        // =====================================================================
+        function Login({ onLogin }) {
+            const [username, setUsername] = useState("");
+            const [password, setPassword] = useState("");
+            const [error, setError] = useState("");
+            const [loading, setLoading] = useState(false);
+
+            const handleLogin = (e) => {
+                e.preventDefault();
+                setLoading(true);
+                setTimeout(() => {
+                    if (username === "admin" && password === "admin123") {
+                        localStorage.setItem("edu_jwt_token", "mock_token_jwt");
+                        localStorage.setItem("edu_username", "Nguyễn Văn A (Admin)");
+                        onLogin();
+                    } else {
+                        setError("Tài khoản hoặc mật khẩu không chính xác (Gợi ý: admin / admin123)");
+                        setLoading(false);
+                    }
+                }, 800);
+            };
+
+            return (
+                <div className="flex min-h-screen items-center justify-center bg-gray-200">
+                    <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-2xl">
+                        <div className="mb-8 text-center">
+                            <h1 className="text-3xl font-bold text-blue-700">Đăng Nhập</h1>
+                            <p className="mt-2 text-sm text-gray-500">Hệ thống ôn luyện THPTQG Tin học 2025</p>
+                        </div>
+                        {error && <div className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-600 border border-red-200">{error}</div>}
+                        <form onSubmit={handleLogin} className="space-y-5">
+                            <div>
+                                <label className="mb-1 block text-sm font-medium text-gray-700">Tài khoản</label>
+                                <input type="text" value={username} onChange={e => setUsername(e.target.value)} className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-blue-500 focus:outline-none" required />
+                            </div>
+                            <div>
+                                <label className="mb-1 block text-sm font-medium text-gray-700">Mật khẩu</label>
+                                <input type="password" value={password} onChange={e => setPassword(e.target.value)} className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-blue-500 focus:outline-none" required />
+                            </div>
+                            <button type="submit" disabled={loading} className="w-full rounded-lg bg-blue-700 px-4 py-3 font-bold text-white transition hover:bg-blue-800 disabled:opacity-50">
+                                {loading ? "Đang xác thực bảo mật..." : "Vào hệ thống (Zero Trust)"}
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            );
+        }
+
+        // =====================================================================
+        // COMPONENT: SECURE PDF VIEWER (MÔ PHỎNG CANVAS + WATERMARK)
+        // =====================================================================
+        function SecurePDFViewer() {
+            const canvasRef = useRef(null);
+            const username = localStorage.getItem("edu_username") || "Học sinh Ẩn danh";
+
+            useEffect(() => {
+                // Chặn phím tắt
+                const handleKeyDown = (e) => {
+                    if (e.ctrlKey || e.metaKey) {
+                        const key = e.key.toLowerCase();
+                        if (key === "s" || key === "p" || key === "c") {
+                            e.preventDefault();
+                            alert("Hệ thống bảo mật: Tính năng tải, in và sao chép đã bị vô hiệu hóa.");
+                        }
+                    }
+                };
+                window.addEventListener("keydown", handleKeyDown);
+                return () => window.removeEventListener("keydown", handleKeyDown);
+            }, []);
+
+            useEffect(() => {
+                // Mô phỏng quá trình PDF.js render lên Canvas
+                const canvas = canvasRef.current;
+                const ctx = canvas.getContext("2d");
+                
+                canvas.width = 800;
+                canvas.height = 1000;
+                
+                // Vẽ nền trắng (Mô phỏng giấy)
+                ctx.fillStyle = "#ffffff";
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                // Vẽ nội dung tĩnh (Mô phỏng nội dung tài liệu bị phẳng hóa)
+                ctx.fillStyle = "#1f2937";
+                ctx.font = "bold 28px Arial";
+                ctx.fillText("CHUYÊN ĐỀ KHOA HỌC MÁY TÍNH (CS) - 2025", 50, 80);
+                
+                ctx.font = "18px Arial";
+                ctx.fillText("I. Tổng quan về Trí tuệ nhân tạo (AI)", 50, 140);
+                ctx.fillText("Trí tuệ nhân tạo là ngành khoa học máy tính liên quan đến việc tự động hóa", 50, 180);
+                ctx.fillText("các hành vi thông minh. AI được chia làm hai loại chính: AI hẹp và AI chung.", 50, 210);
+
+                ctx.fillText("II. Mạng máy tính phân tán", 50, 270);
+                ctx.fillText("Việc sử dụng Cloudflare Tunnels giúp hệ thống che giấu IP thực của máy chủ,", 50, 310);
+                ctx.fillText("áp dụng triết lý Zero Trust Access để xác thực từng request độc lập.", 50, 340);
+
+                // ===================================================
+                // CỐT LÕI BẢO MẬT: Vẽ Watermark động in chìm đè lên
+                // ===================================================
+                ctx.save();
+                ctx.translate(canvas.width / 2, canvas.height / 2);
+                ctx.rotate((-45 * Math.PI) / 180);
+                ctx.font = "bold 36px Arial";
+                ctx.fillStyle = "rgba(239, 68, 68, 0.15)"; // Màu đỏ mờ
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+                
+                // Lặp vẽ nhiều dòng watermark vắt chéo
+                for(let i = -2; i <= 2; i++) {
+                    ctx.fillText(`BẢN QUYỀN HỆ THỐNG - ${username.toUpperCase()}`, 0, i * 150);
+                }
+                ctx.restore();
+
+            }, [username]);
+
+            return (
+                <div className="flex flex-col items-center bg-gray-300 p-6 min-h-[calc(100vh-64px)] secure-view" onContextMenu={(e) => { e.preventDefault(); alert("Click chuột phải đã bị chặn."); }}>
+                    <div className="mb-4 text-sm text-gray-700 bg-white px-4 py-2 rounded shadow">
+                        🔒 Chế độ bảo mật Canvas: Không thể bôi đen, tải xuống, In (Ctrl+P) hoặc Copy (Ctrl+C).
+                    </div>
+                    <canvas ref={canvasRef} className="shadow-2xl max-w-full rounded bg-white"></canvas>
+                </div>
+            );
+        }
+
+        // =====================================================================
+        // COMPONENT: EXAM ARENA (THI THỬ & CHỐNG GIAN LẬN)
+        // =====================================================================
+        function ExamArena({ onExit }) {
+            const [questions] = useState(generateFullExam());
+            const [currentIdx, setCurrentIdx] = useState(0);
+            const [answers, setAnswers] = useState({});
+            const [timeLeft, setTimeLeft] = useState(50 * 60);
+            const [isSubmitted, setIsSubmitted] = useState(false);
+            const [submitReason, setSubmitReason] = useState("");
+            
+            // Anti-Cheat State
+            const [isCheating, setIsCheating] = useState(false);
+            const [cheatCount, setCheatCount] = useState(0);
+            
+            const isCheatingRef = useRef(isCheating);
+            const cheatCountRef = useRef(cheatCount);
+
+            useEffect(() => {
+                isCheatingRef.current = isCheating;
+                cheatCountRef.current = cheatCount;
+            }, [isCheating, cheatCount]);
+
+            const submitExam = useCallback((reason) => {
+                setIsSubmitted(true);
+                setSubmitReason(reason);
+            }, []);
+
+            // 1. Logic Anti-Cheat (Tab-Switch Detection)
+            useEffect(() => {
+                const handleLeave = () => {
+                    if (!isCheatingRef.current && (document.hidden || !document.hasFocus())) {
+                        const newCount = cheatCountRef.current + 1;
+                        setIsCheating(true);
+                        setCheatCount(newCount);
+                        
+                        if (newCount >= 3) {
+                            submitExam("Bài thi bị hủy cưỡng chế do hệ thống phát hiện rời màn hình 3 lần.");
+                        }
+                    }
+                };
+
+                window.addEventListener("visibilitychange", handleLeave);
+                window.addEventListener("blur", handleLeave);
+                return () => {
+                    window.removeEventListener("visibilitychange", handleLeave);
+                    window.removeEventListener("blur", handleLeave);
+                };
+            }, [submitExam]);
+
+            // 2. Logic Đồng hồ đếm ngược
+            useEffect(() => {
+                if (isSubmitted || isCheating) return;
+                if (timeLeft <= 0) { submitExam("Hết giờ làm bài."); return; }
+                const timer = setInterval(() => setTimeLeft(prev => prev - 1), 1000);
+                return () => clearInterval(timer);
+            }, [timeLeft, isSubmitted, isCheating, submitExam]);
+
+            const checkAnswered = (q) => {
+                const ans = answers[q.id];
+                if (q.type === "single" || q.type === "text") return !!ans && ans !== "";
+                if (q.type === "true_false") return Array.isArray(ans) && ans.some(v => v !== null);
+                return false;
+            };
+
+            const formatTime = (sec) => `${Math.floor(sec/60).toString().padStart(2,"0")}:${(sec%60).toString().padStart(2,"0")}`;
+
+            if (isSubmitted) {
+                return (
+                    <div className="flex h-screen items-center justify-center bg-gray-100">
+                        <div className="max-w-md bg-white p-8 rounded-xl shadow-xl text-center">
+                            <h2 className="text-3xl font-bold text-blue-700">ĐÃ NỘP BÀI</h2>
+                            <p className="mt-4 text-gray-700 font-medium">{submitReason}</p>
+                            <p className="mt-2 text-sm text-gray-500">Dữ liệu đã được đồng bộ hóa lên Backend qua hầm mã hóa.</p>
+                            <button onClick={onExit} className="mt-6 w-full rounded bg-blue-600 py-3 font-bold text-white hover:bg-blue-700">Trở về Dashboard</button>
+                        </div>
+                    </div>
+                );
+            }
+
+            const currentQ = questions[currentIdx];
+
+            return (
+                <div className="fixed inset-0 z-50 flex flex-col bg-white overflow-hidden">
+                    {/* Header Focus Mode */}
+                    <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b px-6 bg-white shadow-sm">
+                        <div className="flex items-center gap-4">
+                            <h1 className="text-xl font-bold text-gray-800">LUYỆN ĐỀ THPTQG 2025</h1>
+                            <span className="rounded bg-red-100 px-3 py-1 text-sm font-bold text-red-600 border border-red-200">
+                                {cheatCount}/3 Cảnh báo gian lận
+                            </span>
+                        </div>
+                        <div className="flex items-center gap-6">
+                            <div className="text-2xl font-mono font-bold text-blue-700 bg-blue-50 px-4 py-1 rounded-lg border border-blue-200">⏳ {formatTime(timeLeft)}</div>
+                            <button onClick={() => submitExam("Thí sinh chủ động nộp bài.")} className="rounded bg-red-600 px-6 py-2 font-bold text-white hover:bg-red-700">NỘP BÀI</button>
+                        </div>
+                    </header>
+
+                    <main className="flex flex-1 overflow-hidden">
+                        {/* Sidebar Navigator */}
+                        <aside className="w-1/4 border-r bg-gray-50 flex flex-col">
+                            <div className="p-4 bg-white border-b">
+                                <h3 className="font-bold text-gray-700">Tiến độ bài thi</h3>
+                                <div className="mt-2 h-2 w-full rounded-full bg-gray-200">
+                                    <div className="h-2 rounded-full bg-blue-600 transition-all" style={{ width: `${(Object.keys(answers).length / 28) * 100}%` }}></div>
+                                </div>
+                            </div>
+                            <div className="flex-1 overflow-y-auto p-4 grid grid-cols-4 gap-2 content-start">
+                                {questions.map((q, idx) => (
+                                    <button key={q.id} onClick={() => setCurrentIdx(idx)}
+                                        className={`h-12 rounded font-bold border transition ${
+                                            currentIdx === idx ? "ring-2 ring-blue-500" : ""
+                                        } ${checkAnswered(q) ? "bg-blue-600 text-white border-blue-600" : "bg-white text-gray-600 hover:bg-gray-100"}`}>
+                                        {q.id}
+                                    </button>
+                                ))}
+                            </div>
+                        </aside>
+
+                        {/* Question Area */}
+                        <section className="flex-1 overflow-y-auto p-10 bg-white">
+                            <div className="max-w-3xl mx-auto">
+                                <span className="inline-block px-3 py-1 mb-4 rounded bg-blue-100 text-blue-800 font-bold border border-blue-200">
+                                    CÂU HỎI SỐ {currentQ.id} 
+                                    {currentQ.type === 'true_false' && " (Dạng Đúng/Sai 4 Mệnh Đề)"}
+                                    {currentQ.type === 'text' && " (Dạng Trả Lời Ngắn)"}
+                                </span>
+                                <h2 className="text-xl font-medium text-gray-800 mb-6 leading-relaxed">{currentQ.content}</h2>
+
+                                <div className="space-y-4">
+                                    {/* Dạng 1: Trắc nghiệm đơn */}
+                                    {currentQ.type === "single" && currentQ.options.map((opt, i) => (
+                                        <label key={i} className={`flex cursor-pointer items-center gap-4 rounded-xl border p-4 transition ${answers[currentQ.id] === i ? "border-blue-500 bg-blue-50" : "border-gray-200 hover:bg-gray-50"}`}>
+                                            <input type="radio" checked={answers[currentQ.id] === i} onChange={() => setAnswers({...answers, [currentQ.id]: i})} className="h-5 w-5 text-blue-600" />
+                                            <span className="text-lg">{opt}</span>
+                                        </label>
+                                    ))}
+
+                                    {/* Dạng 2: Đúng/Sai (Cấu trúc 2025) */}
+                                    {currentQ.type === "true_false" && (
+                                        <table className="w-full text-left border rounded-lg overflow-hidden">
+                                            <thead className="bg-gray-100">
+                                                <tr>
+                                                    <th className="p-4 border-b font-semibold text-gray-700">Mệnh đề</th>
+                                                    <th className="w-24 p-4 border-b border-l text-center font-bold text-green-700">Đúng</th>
+                                                    <th className="w-24 p-4 border-b border-l text-center font-bold text-red-700">Sai</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {currentQ.subClauses.map((sub, i) => {
+                                                    const arr = answers[currentQ.id] || [null,null,null,null];
+                                                    return (
+                                                        <tr key={i} className="border-b last:border-b-0 hover:bg-gray-50">
+                                                            <td className="p-4 text-gray-800">{sub}</td>
+                                                            <td className="p-4 border-l text-center">
+                                                                <input type="radio" checked={arr[i] === true} onChange={() => { const n = [...arr]; n[i] = true; setAnswers({...answers, [currentQ.id]: n}); }} className="h-6 w-6 cursor-pointer accent-green-600" />
+                                                            </td>
+                                                            <td className="p-4 border-l text-center">
+                                                                <input type="radio" checked={arr[i] === false} onChange={() => { const n = [...arr]; n[i] = false; setAnswers({...answers, [currentQ.id]: n}); }} className="h-6 w-6 cursor-pointer accent-red-600" />
+                                                            </td>
+                                                        </tr>
+                                                    )
+                                                })}
+                                            </tbody>
+                                        </table>
+                                    )}
+
+                                    {/* Dạng 3: Trả lời ngắn */}
+                                    {currentQ.type === "text" && (
+                                        <input type="text" placeholder="Nhập kết quả hoặc đáp án ngắn..." value={answers[currentQ.id] || ""} onChange={(e) => setAnswers({...answers, [currentQ.id]: e.target.value})} className="w-full rounded-xl border-2 border-gray-300 p-4 text-lg focus:border-blue-500 focus:outline-none" />
+                                    )}
+                                </div>
+
+                                <div className="mt-10 flex justify-between border-t pt-6">
+                                    <button onClick={() => setCurrentIdx(p => Math.max(0, p-1))} disabled={currentIdx === 0} className="px-6 py-2 rounded border font-bold disabled:opacity-50 hover:bg-gray-100">← Câu trước</button>
+                                    <button onClick={() => setCurrentIdx(p => Math.min(27, p+1))} disabled={currentIdx === 27} className="px-6 py-2 rounded bg-blue-600 text-white font-bold disabled:opacity-50 hover:bg-blue-700">Câu tiếp →</button>
+                                </div>
+                            </div>
+                        </section>
+                    </main>
+
+                    {/* Anti-Cheat Modal Overlay */}
+                    {isCheating && cheatCount < 3 && (
+                        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-sm">
+                            <div className="bg-white p-8 rounded-2xl max-w-lg text-center shadow-2xl">
+                                <div className="text-5xl mb-4">⚠️</div>
+                                <h2 className="text-2xl font-bold text-red-600 mb-2">CẢNH BÁO VI PHẠM QUY CHẾ</h2>
+                                <p className="text-gray-700 mb-4">Hệ thống phát hiện bạn đã chuyển Tab hoặc rời mắt khỏi màn hình bài thi (Blur/Hidden Event triggered).</p>
+                                <p className="text-lg font-bold text-red-600 mb-6">Vi phạm: {cheatCount}/3 lần</p>
+                                <button onClick={() => setIsCheating(false)} className="w-full rounded-lg bg-red-600 px-6 py-3 font-bold text-white hover:bg-red-700 shadow">Xác nhận quay lại bài thi</button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        // =====================================================================
+        // COMPONENT: MAIN APP (ROUTING & LAYOUT)
+        // =====================================================================
+        function App() {
+            const [isAuthenticated, setIsAuthenticated] = useState(!!localStorage.getItem("edu_jwt_token"));
+            const [currentRoute, setCurrentRoute] = useState("dashboard");
+
+            if (!isAuthenticated) {
+                return <Login onLogin={() => setIsAuthenticated(true)} />;
+            }
+
+            if (currentRoute === "arena") {
+                return <ExamArena onExit={() => setCurrentRoute("dashboard")} />;
+            }
+
+            const username = localStorage.getItem("edu_username");
+
+            const handleLogout = () => {
+                localStorage.removeItem("edu_jwt_token");
+                setIsAuthenticated(false);
+            };
+
+            return (
+                <div className="flex min-h-screen bg-gray-50">
+                    {/* Sidebar */}
+                    <aside className="fixed left-0 top-0 z-40 h-screen w-64 bg-blue-800 text-white shadow-xl">
+                        <div className="flex h-16 items-center justify-center border-b border-blue-700 bg-blue-900">
+                            <h1 className="text-lg font-bold tracking-wider">THPTQG TIN HỌC 2025</h1>
+                        </div>
+                        <nav className="mt-4 px-3 space-y-1">
+                            {[
+                                { id: "dashboard", name: "Tổng quan Dashboard", icon: "📊" },
+                                { id: "vault", name: "Kho Tài Liệu (Bảo mật)", icon: "🔒" },
+                                { id: "arena", name: "Luyện Đề Thi Thử", icon: "⚔️" },
+                            ].map(item => (
+                                <button key={item.id} onClick={() => setCurrentRoute(item.id)} className={`w-full flex items-center gap-3 rounded-lg px-4 py-3 text-left transition ${currentRoute === item.id ? "bg-blue-600 font-bold shadow-inner" : "hover:bg-blue-700"}`}>
+                                    <span>{item.icon}</span> {item.name}
+                                </button>
+                            ))}
+                        </nav>
+                    </aside>
+
+                    {/* Main Content Layout */}
+                    <div className="ml-64 flex flex-1 flex-col">
+                        {/* Header */}
+                        <header className="sticky top-0 z-30 flex h-16 items-center justify-between bg-white px-8 shadow-sm">
+                            <h2 className="text-xl font-semibold text-gray-800 capitalize">
+                                {currentRoute === "dashboard" && "Bảng điều khiển hệ thống"}
+                                {currentRoute === "vault" && "Kho lưu trữ tài liệu mật (PDF.js Canvas)"}
+                            </h2>
+                            <div className="flex items-center gap-4">
+                                <div className="text-sm font-medium text-gray-700">👨‍🎓 {username}</div>
+                                <div className="h-6 w-px bg-gray-300"></div>
+                                <button onClick={handleLogout} className="text-sm font-bold text-red-600 hover:text-red-800">Đăng xuất</button>
+                            </div>
+                        </header>
+
+                        {/* Page Content */}
+                        <main className="flex-1 p-8">
+                            {currentRoute === "dashboard" && (
+                                <div className="grid gap-6 md:grid-cols-2">
+                                    <div className="rounded-xl bg-white p-6 shadow-sm border border-gray-100">
+                                        <h3 className="text-lg font-bold text-blue-700 mb-2">🎓 Chào mừng đến với Không gian Zero Trust</h3>
+                                        <p className="text-gray-600">Hệ thống đang hoạt động theo kiến trúc Decoupled. Dữ liệu của bạn được truy xuất an toàn thông qua Cloudflare Tunnels từ máy chủ cá nhân.</p>
+                                    </div>
+                                    <div className="rounded-xl bg-white p-6 shadow-sm border border-gray-100">
+                                        <h3 className="text-lg font-bold text-green-700 mb-2">Cập nhật 2025</h3>
+                                        <p className="text-gray-600">Phân hệ "Luyện Đề" đã cập nhật cấu trúc mới nhất của Bộ GD&ĐT: Tích hợp dạng bài Đúng/Sai (4 mệnh đề) và Trả lời ngắn.</p>
+                                    </div>
+                                </div>
+                            )}
+
+                            {currentRoute === "vault" && <SecurePDFViewer />}
+                        </main>
+                    </div>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById("root"));
+        root.render(<App />);
+    </script>
+</body>
+</html>
